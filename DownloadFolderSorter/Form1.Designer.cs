@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.dataGrid = new System.Windows.Forms.DataGridView();
             this.OperationName = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -38,6 +39,7 @@
             this.tFolder = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.bBrowser = new System.Windows.Forms.Button();
+            this.notifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.dataGrid)).BeginInit();
             this.SuspendLayout();
             // 
@@ -81,11 +83,11 @@
             // 
             this.bApply.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.bApply.Enabled = false;
-            this.bApply.Location = new System.Drawing.Point(547, 242);
+            this.bApply.Location = new System.Drawing.Point(523, 242);
             this.bApply.Name = "bApply";
-            this.bApply.Size = new System.Drawing.Size(75, 23);
+            this.bApply.Size = new System.Drawing.Size(99, 23);
             this.bApply.TabIndex = 1;
-            this.bApply.Text = "Apply";
+            this.bApply.Text = "Apply and Sort";
             this.bApply.UseVisualStyleBackColor = true;
             this.bApply.Click += new System.EventHandler(this.bApply_Click);
             // 
@@ -129,6 +131,14 @@
             this.bBrowser.UseVisualStyleBackColor = true;
             this.bBrowser.Click += new System.EventHandler(this.bBrowser_Click);
             // 
+            // notifyIcon
+            // 
+            this.notifyIcon.BalloonTipIcon = System.Windows.Forms.ToolTipIcon.Info;
+            this.notifyIcon.Icon = ((System.Drawing.Icon)(resources.GetObject("notifyIcon.Icon")));
+            this.notifyIcon.Text = "Download Folder Sorter";
+            this.notifyIcon.Visible = true;
+            this.notifyIcon.DoubleClick += new System.EventHandler(this.notifyIcon_DoubleClick);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -141,10 +151,11 @@
             this.Controls.Add(this.bApply);
             this.Controls.Add(this.dataGrid);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MinimumSize = new System.Drawing.Size(450, 250);
+            this.MinimumSize = new System.Drawing.Size(650, 250);
             this.Name = "MainForm";
             this.Text = "Download Folder Sorter";
             this.Load += new System.EventHandler(this.MainForm_Load);
+            this.Resize += new System.EventHandler(this.MainForm_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.dataGrid)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -162,6 +173,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn FileNameMatching;
         private System.Windows.Forms.DataGridViewTextBoxColumn ToFolder;
         private System.Windows.Forms.Button bBrowser;
+        private System.Windows.Forms.NotifyIcon notifyIcon;
     }
 }
 
