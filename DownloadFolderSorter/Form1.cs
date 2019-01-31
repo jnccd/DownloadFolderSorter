@@ -18,6 +18,7 @@ namespace DownloadFolderSorter
         FileSystemWatcher weightwatchers;
         bool dfolderExists;
         bool isSortable;
+        bool phaseShift;
 
         public MainForm()
         {
@@ -29,7 +30,7 @@ namespace DownloadFolderSorter
             weightwatchers = new FileSystemWatcher();
             setDownloadFolder(config.Default.downloadFolder);
             loadDataGrid();
-            ShowWindow(this.Handle, 2);
+            Task.Factory.StartNew(() => { this.InvokeIfRequired(() => { HideForm(); }); });
         }
 
         private void setDownloadFolder(string folder)
@@ -60,6 +61,7 @@ namespace DownloadFolderSorter
                     } catch (Exception ex) { MessageBox.Show("Sorting Error: \n" + e.ToString()); }
                 });
                 weightwatchers.EnableRaisingEvents = true;
+                weightwatchers.IncludeSubdirectories = false;
 
                 SortDownloadFolder();
             }
@@ -91,8 +93,8 @@ namespace DownloadFolderSorter
 
             if (!CanSort())
                 lStatus.InvokeIfRequired(() => { lStatus.Text = "Status: Error, current configuration is invalid, check the input matrix"; });
-
-            SortDownloadFolder();
+            else
+                SortDownloadFolder();
         }
         private void loadDataGrid()
         {
@@ -123,22 +125,46 @@ namespace DownloadFolderSorter
             if (!CanSort())
                 return;
 
-            lStatus.InvokeIfRequired(() => { lStatus.Text = "Status: Sorting..."; });
-            string[] files = Directory.GetFiles(config.Default.downloadFolder);
-            for (int i = 0; i < files.Length; i++)
-                for (int j = 0; j < config.Default.fileMatches.Length; j++)
-                {
-                    string[] split = config.Default.fileMatches[j].Split('|');
-                    for (int k = 0; k < split.Length; k++)
-                        if (Path.GetFileName(files[i]).Contains(split[k]) && !File.Exists(config.Default.targetFolders[j] + "\\" + Path.GetFileName(files[i])))
-                            File.Move(files[i], config.Default.targetFolders[j] + "\\" + Path.GetFileName(files[i]));
-                }
-            lStatus.InvokeIfRequired(() => { lStatus.Text = "Status: Ready"; });
+            Task.Factory.StartNew(() => {
+                lStatus.InvokeIfRequired(() => { lStatus.Text = "Status: Sorting..."; });
+                string[] files = Directory.GetFiles(config.Default.downloadFolder);
+                for (int i = 0; i < files.Length; i++)
+                    for (int j = 0; j < config.Default.fileMatches.Length; j++)
+                    {
+                        string[] split = config.Default.fileMatches[j].Split('|');
+                        for (int k = 0; k < split.Length; k++)
+                            if (Path.GetFileName(files[i]).Contains(split[k]) && !File.Exists(config.Default.targetFolders[j] + "\\" + Path.GetFileName(files[i])))
+                            {
+                                Thread.Sleep(10000);
+                                File.Move(files[i], config.Default.targetFolders[j] + "\\" + Path.GetFileName(files[i]));
+                            }
+                    }
+                lStatus.InvokeIfRequired(() => { lStatus.Text = "Status: Ready"; });
+            });
         }
-
-        // dll Imports
-        [DllImport("user32.dll")]
-        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        
+        private void notifyIcon_DoubleClick(object sender, EventArgs e)
+        {
+            this.InvokeIfRequired(() => { ShowForm(); });
+        }
+        private void MainForm_Resize(object sender, EventArgs e)
+        {
+            if (WindowState == FormWindowState.Minimized && !phaseShift)
+                HideForm();
+        }
+        private void HideForm()
+        {
+            phaseShift = true;
+            this.ForceHide();
+            phaseShift = false;
+        }
+        private void ShowForm()
+        {
+            phaseShift = true;
+            this.ForceShow();
+            WindowState = FormWindowState.Normal;
+            phaseShift = false;
+        }
     }
 
     public static class Extensions
@@ -155,5 +181,20 @@ namespace DownloadFolderSorter
                 action();
             }
         }
+        public static void ForceHide(this Form F)
+        {
+            Hide(F.Handle);
+        }
+        public static void ForceShow(this Form F)
+        {
+            Show(F.Handle);
+        }
+
+        public static void Hide(IntPtr WindowHandle) { ShowWindow(WindowHandle, 0); }
+        public static void Minimize(IntPtr WindowHandle) { ShowWindow(WindowHandle, 2); }
+        public static void Show(IntPtr WindowHandle) { ShowWindow(WindowHandle, 5); }
+
+        [DllImport("user32.dll")]
+        public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     }
 }
