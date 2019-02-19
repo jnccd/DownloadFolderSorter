@@ -17,8 +17,8 @@ namespace DownloadFolderSorter
     {
         FileSystemWatcher weightwatchers;
         bool dfolderExists;
-        bool isSortable;
         bool phaseShift;
+        int currentMouseOverRow;
 
         public MainForm()
         {
@@ -28,7 +28,7 @@ namespace DownloadFolderSorter
         private void MainForm_Load(object sender, EventArgs e)
         {
             weightwatchers = new FileSystemWatcher();
-            setDownloadFolder(config.Default.downloadFolder);
+            setDownloadFolder(config.Data.downloadFolder);
             loadDataGrid();
             Task.Factory.StartNew(() => { this.InvokeIfRequired(() => { HideForm(); }); });
         }
@@ -38,8 +38,8 @@ namespace DownloadFolderSorter
             dfolderExists = false;
 
             tFolder.Text = folder;
-            config.Default.downloadFolder = folder;
-            config.Default.Save();
+            config.Data.downloadFolder = folder;
+            config.Save();
 
             dfolderExists = Directory.Exists(folder);
             dataGrid.Enabled = dfolderExists;
@@ -58,7 +58,8 @@ namespace DownloadFolderSorter
                     try
                     {
                         SortDownloadFolder();
-                    } catch (Exception ex) { MessageBox.Show("Sorting Error: \n" + e.ToString()); }
+                    }
+                    catch (Exception ex) { MessageBox.Show("Sorting Error: \n" + e.ToString()); }
                 });
                 weightwatchers.EnableRaisingEvents = true;
                 weightwatchers.IncludeSubdirectories = false;
@@ -74,75 +75,122 @@ namespace DownloadFolderSorter
             if (dialog.ShowDialog() == DialogResult.OK)
                 setDownloadFolder(dialog.SelectedPath);
         }
-        
-        private void bApply_Click(object sender, EventArgs e)
+
+        private void DatagridIntoConfig()
         {
+            config.Data.Matches.Clear();
             int rows = dataGrid.Rows.Count - 1;
-            config.Default.names = new string[rows];
-            config.Default.fileMatches = new string[rows];
-            config.Default.targetFolders = new string[rows];
-            
             for (int i = 0; i < rows; i++)
             {
-                config.Default.names[i] = (string)dataGrid.Rows[i].Cells[0].Value;
-                config.Default.fileMatches[i] = (string)dataGrid.Rows[i].Cells[1].Value;
-                config.Default.targetFolders[i] = (string)dataGrid.Rows[i].Cells[2].Value;
+                config.Data.Matches.Add(new Matching()
+                {
+                    Name = (string)dataGrid.Rows[i].Cells[0].Value,
+                    Match = (string)dataGrid.Rows[i].Cells[1].Value,
+                    Target = (string)dataGrid.Rows[i].Cells[2].Value
+                });
             }
+        }
+        private void ConfigIntoDatagrid()
+        {
+            if (config.Data.Matches == null)
+                return;
 
-            config.Default.Save();
+            dataGrid.Rows.Clear();
+            for (int i = 0; i < config.Data.Matches.Count; i++)
+                dataGrid.Rows.Add(new object[] { config.Data.Matches[i].Name, config.Data.Matches[i].Match, config.Data.Matches[i].Target });
+        }
 
-            if (!CanSort())
-                lStatus.InvokeIfRequired(() => { lStatus.Text = "Status: Error, current configuration is invalid, check the input matrix"; });
-            else
-                SortDownloadFolder();
+        private void bApply_Click(object sender, EventArgs e)
+        {
+            DatagridIntoConfig();
+
+            config.Save();
+
+            SortDownloadFolder();
         }
         private void loadDataGrid()
         {
-            if (config.Default.names == null || config.Default.fileMatches == null || config.Default.targetFolders == null)
-                return;
-
-            int rows = config.Default.targetFolders.Length;
-
-            for (int i = 0; i < rows; i++)
-                dataGrid.Rows.Add(new object[] { config.Default.names[i], config.Default.fileMatches[i], config.Default.targetFolders[i] });
+            ConfigIntoDatagrid();
         }
         private bool CanSort()
         {
-            if (!dfolderExists || !Directory.Exists(config.Default.downloadFolder) ||
-                config.Default.targetFolders == null || config.Default.names == null || config.Default.fileMatches == null ||
-                config.Default.targetFolders.Length == 0 || config.Default.names.Length != config.Default.targetFolders.Length || 
-                config.Default.fileMatches.Length != config.Default.targetFolders.Length)
+            if (!dfolderExists || !Directory.Exists(config.Data.downloadFolder) ||
+                config.Data.Matches == null || config.Data.Matches.Count == 0)
                 return false;
 
-            for (int i = 0; i < config.Default.targetFolders.Length; i++)
-                if (!Directory.Exists(config.Default.targetFolders[i]))
+            for (int i = 0; i < config.Data.Matches.Count; i++)
+                if (!Directory.Exists(config.Data.Matches[i].Target))
                     return false;
 
             return true;
         }
         private void SortDownloadFolder()
         {
-            if (!CanSort())
-                return;
-
             Task.Factory.StartNew(() => {
-                lStatus.InvokeIfRequired(() => { lStatus.Text = "Status: Sorting..."; });
-                string[] files = Directory.GetFiles(config.Default.downloadFolder);
-                for (int i = 0; i < files.Length; i++)
-                    for (int j = 0; j < config.Default.fileMatches.Length; j++)
+                if (!bApply.Enabled)
+                    return;
+
+                lock (lStatus)
+                {
+                    if (!CanSort())
                     {
-                        string[] split = config.Default.fileMatches[j].Split('|');
-                        for (int k = 0; k < split.Length; k++)
-                            if (Path.GetFileName(files[i]).Contains(split[k]) && !File.Exists(config.Default.targetFolders[j] + "\\" + Path.GetFileName(files[i])))
-                            {
-                                Thread.Sleep(10000);
-                                File.Move(files[i], config.Default.targetFolders[j] + "\\" + Path.GetFileName(files[i]));
-                            }
+                        lStatus.InvokeIfRequired(() => lStatus.Text = "Status: Error, current configuration is invalid");
+                        return;
                     }
-                lStatus.InvokeIfRequired(() => { lStatus.Text = "Status: Ready"; });
+
+                    bApply.InvokeIfRequired(() => bApply.Enabled = false);
+                    lStatus.InvokeIfRequired(() => lStatus.Text = "Status: Sorting...");
+                    List<Thread> sortThreads = new List<Thread>();
+                    string[] files = Directory.GetFiles(config.Data.downloadFolder);
+                    for (int i = 0; i < files.Length; i++)
+                        for (int j = 0; j < config.Data.Matches.Count; j++)
+                        {
+                            if (!string.IsNullOrWhiteSpace(config.Data.Matches[j].Match))
+                            {
+                                string[] splitOR = config.Data.Matches[j].Match.Split('|');
+                                for (int k = 0; k < splitOR.Length; k++)
+                                {
+                                    if (Path.GetFileName(files[i]).ContainsAll(splitOR[k].Split('&')) &&
+                                        !File.Exists(config.Data.Matches[j].Target + "\\" + Path.GetFileName(files[i])))
+                                    {
+                                        Thread t = new Thread(new ParameterizedThreadStart(ThreadedFileMove));
+                                        sortThreads.Add(t);
+                                        t.Name = "SortThread" + sortThreads.Count;
+                                        t.Start(new string[] { files[i], config.Data.Matches[j].Target + "\\" + Path.GetFileName(files[i]) });
+                                    }
+                                }
+                            }
+                        }
+
+                    while (sortThreads.Count > 0)
+                    {
+                        sortThreads[0].Join();
+                        if (!sortThreads[0].IsAlive)
+                            sortThreads.RemoveAt(0);
+                    }
+
+                    lStatus.InvokeIfRequired(() => lStatus.Text = "Status: Ready");
+                    bApply.InvokeIfRequired(() => bApply.Enabled = true);
+                }
             });
         }
-        
+        private void ThreadedFileMove(object o)
+        {
+            if (o.GetType() != typeof(string[]))
+                return;
+            string[] fromTo = o as string[];
+            if (fromTo.Length != 2)
+                return;
+
+            Thread.Sleep(5000);
+
+            lock (this)
+            {
+                if (File.Exists(fromTo[0]) && !File.Exists(fromTo[1]))
+                    File.Move(fromTo[0], fromTo[1]);
+            }
+        }
+
         private void notifyIcon_DoubleClick(object sender, EventArgs e)
         {
             this.InvokeIfRequired(() => { ShowForm(); });
@@ -164,6 +212,50 @@ namespace DownloadFolderSorter
             this.ForceShow();
             WindowState = FormWindowState.Normal;
             phaseShift = false;
+        }
+
+        private void dataGrid_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e != null && e.Button == MouseButtons.Right)
+            {
+                ContextMenu m = new ContextMenu();
+                m.MenuItems.Add(new MenuItem("↑", ((object s, EventArgs ev) =>
+                {
+                    try
+                    {
+                        if (currentMouseOverRow > 0)
+                        {
+                            DatagridIntoConfig();
+
+                            Matching M = config.Data.Matches[currentMouseOverRow];
+                            config.Data.Matches.RemoveAt(currentMouseOverRow);
+                            config.Data.Matches.Insert(currentMouseOverRow - 1, M);
+
+                            ConfigIntoDatagrid();
+                        }
+                    }
+                    catch { }
+                })));
+                m.MenuItems.Add(new MenuItem("↓", ((object s, EventArgs ev) =>
+                {
+                    try
+                    {
+                        if (currentMouseOverRow < dataGrid.Rows.Count - 1)
+                        {
+                            DatagridIntoConfig();
+
+                            Matching M = config.Data.Matches[currentMouseOverRow];
+                            config.Data.Matches.RemoveAt(currentMouseOverRow);
+                            config.Data.Matches.Insert(currentMouseOverRow + 1, M);
+
+                            ConfigIntoDatagrid();
+                        }
+                    }
+                    catch { }
+                })));
+                currentMouseOverRow = e.RowIndex;
+                m.Show(dataGrid, new Point(e.X + dataGrid.GetColumnDisplayRectangle(e.ColumnIndex, true).X, e.Y + dataGrid.GetRowDisplayRectangle(e.RowIndex, true).Y));
+            }
         }
     }
 
@@ -188,6 +280,13 @@ namespace DownloadFolderSorter
         public static void ForceShow(this Form F)
         {
             Show(F.Handle);
+        }
+        public static bool ContainsAll(this string s, string[] contains)
+        {
+            foreach (string t in contains)
+                if (!s.Contains(t))
+                    return false;
+            return true;
         }
 
         public static void Hide(IntPtr WindowHandle) { ShowWindow(WindowHandle, 0); }
