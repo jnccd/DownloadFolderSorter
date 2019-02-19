@@ -58,6 +58,7 @@
             this.dataGrid.Name = "dataGrid";
             this.dataGrid.Size = new System.Drawing.Size(609, 195);
             this.dataGrid.TabIndex = 0;
+            this.dataGrid.CellMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dataGrid_CellMouseClick);
             // 
             // OperationName
             // 
