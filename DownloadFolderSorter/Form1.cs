@@ -13,27 +13,30 @@ using System.Windows.Forms;
 
 namespace DownloadFolderSorter
 {
+    public class Matching { public string Name, Match, Target; }
+
     public partial class MainForm : Form
     {
         FileSystemWatcher weightwatchers;
         bool dfolderExists;
         bool phaseShift;
         int currentMouseOverRow;
-
+        
+        // StartUp
         public MainForm()
         {
             InitializeComponent();
         }
-
         private void MainForm_Load(object sender, EventArgs e)
         {
             weightwatchers = new FileSystemWatcher();
-            setDownloadFolder(config.Data.downloadFolder);
-            loadDataGrid();
+            SetDownloadFolder(config.Data.downloadFolder);
+            LoadDataGrid();
             Task.Factory.StartNew(() => { this.InvokeIfRequired(() => { HideForm(); }); });
         }
 
-        private void setDownloadFolder(string folder)
+        // SetFolder
+        private void SetDownloadFolder(string folder)
         {
             dfolderExists = false;
 
@@ -67,15 +70,16 @@ namespace DownloadFolderSorter
                 SortDownloadFolder();
             }
         }
-        private void bBrowser_Click(object sender, EventArgs e)
+        private void BBrowser_Click(object sender, EventArgs e)
         {
             FolderBrowserDialog dialog = new FolderBrowserDialog();
             dialog.SelectedPath = tFolder.Text;
             dialog.Description = "Select your Download-Folder";
             if (dialog.ShowDialog() == DialogResult.OK)
-                setDownloadFolder(dialog.SelectedPath);
+                SetDownloadFolder(dialog.SelectedPath);
         }
 
+        // Converters
         private void DatagridIntoConfig()
         {
             config.Data.Matches.Clear();
@@ -94,13 +98,14 @@ namespace DownloadFolderSorter
         {
             if (config.Data.Matches == null)
                 return;
-
+            
             dataGrid.Rows.Clear();
             for (int i = 0; i < config.Data.Matches.Count; i++)
                 dataGrid.Rows.Add(new object[] { config.Data.Matches[i].Name, config.Data.Matches[i].Match, config.Data.Matches[i].Target });
         }
 
-        private void bApply_Click(object sender, EventArgs e)
+        // Actual Sorting
+        private void BApply_Click(object sender, EventArgs e)
         {
             DatagridIntoConfig();
 
@@ -108,7 +113,7 @@ namespace DownloadFolderSorter
 
             SortDownloadFolder();
         }
-        private void loadDataGrid()
+        private void LoadDataGrid()
         {
             ConfigIntoDatagrid();
         }
@@ -182,7 +187,7 @@ namespace DownloadFolderSorter
             if (fromTo.Length != 2)
                 return;
 
-            Thread.Sleep(5000);
+            Thread.Sleep(3000);
 
             lock (this)
             {
@@ -191,7 +196,8 @@ namespace DownloadFolderSorter
             }
         }
 
-        private void notifyIcon_DoubleClick(object sender, EventArgs e)
+        // Show/Hide Icon
+        private void NotifyIcon_DoubleClick(object sender, EventArgs e)
         {
             this.InvokeIfRequired(() => { ShowForm(); });
         }
@@ -214,7 +220,7 @@ namespace DownloadFolderSorter
             phaseShift = false;
         }
 
-        private void dataGrid_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        private void DataGrid_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e != null && e.Button == MouseButtons.Right)
             {
@@ -257,43 +263,5 @@ namespace DownloadFolderSorter
                 m.Show(dataGrid, new Point(e.X + dataGrid.GetColumnDisplayRectangle(e.ColumnIndex, true).X, e.Y + dataGrid.GetRowDisplayRectangle(e.RowIndex, true).Y));
             }
         }
-    }
-
-    public static class Extensions
-    {
-        public static void InvokeIfRequired(this ISynchronizeInvoke obj, MethodInvoker action)
-        {
-            if (obj.InvokeRequired)
-            {
-                var args = new object[0];
-                obj.Invoke(action, args);
-            }
-            else
-            {
-                action();
-            }
-        }
-        public static void ForceHide(this Form F)
-        {
-            Hide(F.Handle);
-        }
-        public static void ForceShow(this Form F)
-        {
-            Show(F.Handle);
-        }
-        public static bool ContainsAll(this string s, string[] contains)
-        {
-            foreach (string t in contains)
-                if (!s.Contains(t))
-                    return false;
-            return true;
-        }
-
-        public static void Hide(IntPtr WindowHandle) { ShowWindow(WindowHandle, 0); }
-        public static void Minimize(IntPtr WindowHandle) { ShowWindow(WindowHandle, 2); }
-        public static void Show(IntPtr WindowHandle) { ShowWindow(WindowHandle, 5); }
-
-        [DllImport("user32.dll")]
-        public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     }
 }
