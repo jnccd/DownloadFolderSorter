@@ -58,7 +58,7 @@
             this.dataGrid.Name = "dataGrid";
             this.dataGrid.Size = new System.Drawing.Size(609, 195);
             this.dataGrid.TabIndex = 0;
-            this.dataGrid.CellMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.dataGrid_CellMouseClick);
+            this.dataGrid.CellMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.DataGrid_CellMouseClick);
             // 
             // OperationName
             // 
@@ -90,7 +90,7 @@
             this.bApply.TabIndex = 1;
             this.bApply.Text = "Apply and Sort";
             this.bApply.UseVisualStyleBackColor = true;
-            this.bApply.Click += new System.EventHandler(this.bApply_Click);
+            this.bApply.Click += new System.EventHandler(this.BApply_Click);
             // 
             // lStatus
             // 
@@ -130,7 +130,7 @@
             this.bBrowser.TabIndex = 6;
             this.bBrowser.Text = "Browse Folders";
             this.bBrowser.UseVisualStyleBackColor = true;
-            this.bBrowser.Click += new System.EventHandler(this.bBrowser_Click);
+            this.bBrowser.Click += new System.EventHandler(this.BBrowser_Click);
             // 
             // notifyIcon
             // 
@@ -138,7 +138,7 @@
             this.notifyIcon.Icon = ((System.Drawing.Icon)(resources.GetObject("notifyIcon.Icon")));
             this.notifyIcon.Text = "Download Folder Sorter";
             this.notifyIcon.Visible = true;
-            this.notifyIcon.DoubleClick += new System.EventHandler(this.notifyIcon_DoubleClick);
+            this.notifyIcon.DoubleClick += new System.EventHandler(this.NotifyIcon_DoubleClick);
             // 
             // MainForm
             // 
