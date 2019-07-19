@@ -23,7 +23,7 @@ namespace DownloadFolderSorter
             }
             catch (Exception e)
             {
-                File.AppendAllText("\\errorlog.txt", $"==={DateTime.Now}===\n{e}\n\n");
+                File.AppendAllText("errorlog.txt", $"==={DateTime.Now}===\n{e}\n\n");
             }
         }
     }

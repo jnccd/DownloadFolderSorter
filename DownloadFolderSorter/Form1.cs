@@ -13,14 +13,13 @@ using System.Windows.Forms;
 
 namespace DownloadFolderSorter
 {
-    public class Matching { public string Name, Match, Target; }
-
     public partial class MainForm : Form
     {
         FileSystemWatcher weightwatchers;
         bool dfolderExists;
         bool phaseShift;
         int currentMouseOverRow;
+        object FileMoveLock = new object();
         
         // StartUp
         public MainForm()
@@ -189,7 +188,7 @@ namespace DownloadFolderSorter
 
             Thread.Sleep(3000);
 
-            lock (this)
+            lock (FileMoveLock)
             {
                 if (File.Exists(fromTo[0]) && !File.Exists(fromTo[1]))
                     File.Move(fromTo[0], fromTo[1]);
