@@ -168,23 +168,16 @@ namespace DownloadFolderSorter
                                                 {
                                                     string num = new string(fileName.Remove(0, index + 1).TakeWhile(x => char.IsDigit(x)).ToArray());
                                                     int number = Convert.ToInt32(num);
-                                                    if (number > 0)
-                                                    {
-                                                        fileName = fileName.Substring(0, index + 1) + (number + 1) + fileName.Substring(index + 1 + num.Length);
-                                                    }
-                                                    else
-                                                    {
-                                                        fileName = fileName + " (1)";
-                                                    }
+                                                    fileName = fileName.Substring(0, index + 1) + (number + 1) + fileName.Substring(index + 1 + num.Length);
                                                 }
                                                 catch
                                                 {
-                                                    fileName = fileName + " (1)";
+                                                    fileName = Path.GetFileNameWithoutExtension(fileName) + " (1)" + Path.GetExtension(fileName);
                                                 }
                                             }
                                             else
                                             {
-                                                fileName = fileName + " (1)";
+                                                fileName = Path.GetFileNameWithoutExtension(fileName) + " (1)" + Path.GetExtension(fileName);
                                             }
                                         }
 
