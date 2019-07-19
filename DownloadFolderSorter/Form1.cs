@@ -29,7 +29,7 @@ namespace DownloadFolderSorter
         private void MainForm_Load(object sender, EventArgs e)
         {
             weightwatchers = new FileSystemWatcher();
-            SetDownloadFolder(config.Data.downloadFolder);
+            SetDownloadFolder(Config.Data.downloadFolder);
             LoadDataGrid();
             Task.Factory.StartNew(() => { this.InvokeIfRequired(() => { HideForm(); }); });
         }
@@ -40,8 +40,8 @@ namespace DownloadFolderSorter
             dfolderExists = false;
 
             tFolder.Text = folder;
-            config.Data.downloadFolder = folder;
-            config.Save();
+            Config.Data.downloadFolder = folder;
+            Config.Save();
 
             dfolderExists = Directory.Exists(folder);
             dataGrid.Enabled = dfolderExists;
@@ -61,7 +61,7 @@ namespace DownloadFolderSorter
                     {
                         SortDownloadFolder();
                     }
-                    catch (Exception ex) { MessageBox.Show("Sorting Error: \n" + e.ToString()); }
+                    catch { MessageBox.Show("Sorting Error: \n" + e.ToString()); }
                 });
                 weightwatchers.EnableRaisingEvents = true;
                 weightwatchers.IncludeSubdirectories = false;
@@ -71,9 +71,11 @@ namespace DownloadFolderSorter
         }
         private void BBrowser_Click(object sender, EventArgs e)
         {
-            FolderBrowserDialog dialog = new FolderBrowserDialog();
-            dialog.SelectedPath = tFolder.Text;
-            dialog.Description = "Select your Download-Folder";
+            FolderBrowserDialog dialog = new FolderBrowserDialog
+            {
+                SelectedPath = tFolder.Text,
+                Description = "Select your Download-Folder"
+            };
             if (dialog.ShowDialog() == DialogResult.OK)
                 SetDownloadFolder(dialog.SelectedPath);
         }
@@ -81,11 +83,11 @@ namespace DownloadFolderSorter
         // Converters
         private void DatagridIntoConfig()
         {
-            config.Data.Matches.Clear();
+            Config.Data.Matches.Clear();
             int rows = dataGrid.Rows.Count - 1;
             for (int i = 0; i < rows; i++)
             {
-                config.Data.Matches.Add(new Matching()
+                Config.Data.Matches.Add(new Matching()
                 {
                     Name = (string)dataGrid.Rows[i].Cells[0].Value,
                     Match = (string)dataGrid.Rows[i].Cells[1].Value,
@@ -95,12 +97,12 @@ namespace DownloadFolderSorter
         }
         private void ConfigIntoDatagrid()
         {
-            if (config.Data.Matches == null)
+            if (Config.Data.Matches == null)
                 return;
             
             dataGrid.Rows.Clear();
-            for (int i = 0; i < config.Data.Matches.Count; i++)
-                dataGrid.Rows.Add(new object[] { config.Data.Matches[i].Name, config.Data.Matches[i].Match, config.Data.Matches[i].Target });
+            for (int i = 0; i < Config.Data.Matches.Count; i++)
+                dataGrid.Rows.Add(new object[] { Config.Data.Matches[i].Name, Config.Data.Matches[i].Match, Config.Data.Matches[i].Target });
         }
 
         // Actual Sorting
@@ -108,7 +110,7 @@ namespace DownloadFolderSorter
         {
             DatagridIntoConfig();
 
-            config.Save();
+            Config.Save();
 
             SortDownloadFolder();
         }
@@ -118,12 +120,12 @@ namespace DownloadFolderSorter
         }
         private bool CanSort()
         {
-            if (!dfolderExists || !Directory.Exists(config.Data.downloadFolder) ||
-                config.Data.Matches == null || config.Data.Matches.Count == 0)
+            if (!dfolderExists || !Directory.Exists(Config.Data.downloadFolder) ||
+                Config.Data.Matches == null || Config.Data.Matches.Count == 0)
                 return false;
 
-            for (int i = 0; i < config.Data.Matches.Count; i++)
-                if (!Directory.Exists(config.Data.Matches[i].Target))
+            for (int i = 0; i < Config.Data.Matches.Count; i++)
+                if (!Directory.Exists(Config.Data.Matches[i].Target))
                     return false;
 
             return true;
@@ -145,22 +147,51 @@ namespace DownloadFolderSorter
                     bApply.InvokeIfRequired(() => bApply.Enabled = false);
                     lStatus.InvokeIfRequired(() => lStatus.Text = "Status: Sorting...");
                     List<Thread> sortThreads = new List<Thread>();
-                    string[] files = Directory.GetFiles(config.Data.downloadFolder);
+                    string[] files = Directory.GetFiles(Config.Data.downloadFolder);
                     for (int i = 0; i < files.Length; i++)
-                        for (int j = 0; j < config.Data.Matches.Count; j++)
+                        for (int j = 0; j < Config.Data.Matches.Count; j++)
                         {
-                            if (!string.IsNullOrWhiteSpace(config.Data.Matches[j].Match))
+                            if (!string.IsNullOrWhiteSpace(Config.Data.Matches[j].Match))
                             {
-                                string[] splitOR = config.Data.Matches[j].Match.Split('|');
+                                string[] splitOR = Config.Data.Matches[j].Match.Split('|');
                                 for (int k = 0; k < splitOR.Length; k++)
                                 {
-                                    if (Path.GetFileName(files[i]).ContainsAll(splitOR[k].Split('&')) &&
-                                        !File.Exists(config.Data.Matches[j].Target + "\\" + Path.GetFileName(files[i])))
+                                    if (Path.GetFileName(files[i]).ContainsAll(splitOR[k].Split('&')))
                                     {
+                                        string fileName = Path.GetFileName(files[i]);
+                                        while (File.Exists(Config.Data.Matches[j].Target + "\\" + fileName))
+                                        {
+                                            int index = fileName.LastIndexOf('(');
+                                            if (index != -1)
+                                            {
+                                                try
+                                                {
+                                                    string num = new string(fileName.Remove(0, index + 1).TakeWhile(x => char.IsDigit(x)).ToArray());
+                                                    int number = Convert.ToInt32(num);
+                                                    if (number > 0)
+                                                    {
+                                                        fileName = fileName.Substring(0, index + 1) + (number + 1) + fileName.Substring(index + 1 + num.Length);
+                                                    }
+                                                    else
+                                                    {
+                                                        fileName = fileName + " (1)";
+                                                    }
+                                                }
+                                                catch
+                                                {
+                                                    fileName = fileName + " (1)";
+                                                }
+                                            }
+                                            else
+                                            {
+                                                fileName = fileName + " (1)";
+                                            }
+                                        }
+
                                         Thread t = new Thread(new ParameterizedThreadStart(ThreadedFileMove));
                                         sortThreads.Add(t);
                                         t.Name = "SortThread" + sortThreads.Count;
-                                        t.Start(new string[] { files[i], config.Data.Matches[j].Target + "\\" + Path.GetFileName(files[i]) });
+                                        t.Start(new string[] { files[i], Config.Data.Matches[j].Target + "\\" + fileName });
                                     }
                                 }
                             }
@@ -232,9 +263,9 @@ namespace DownloadFolderSorter
                         {
                             DatagridIntoConfig();
 
-                            Matching M = config.Data.Matches[currentMouseOverRow];
-                            config.Data.Matches.RemoveAt(currentMouseOverRow);
-                            config.Data.Matches.Insert(currentMouseOverRow - 1, M);
+                            Matching M = Config.Data.Matches[currentMouseOverRow];
+                            Config.Data.Matches.RemoveAt(currentMouseOverRow);
+                            Config.Data.Matches.Insert(currentMouseOverRow - 1, M);
 
                             ConfigIntoDatagrid();
                         }
@@ -249,9 +280,9 @@ namespace DownloadFolderSorter
                         {
                             DatagridIntoConfig();
 
-                            Matching M = config.Data.Matches[currentMouseOverRow];
-                            config.Data.Matches.RemoveAt(currentMouseOverRow);
-                            config.Data.Matches.Insert(currentMouseOverRow + 1, M);
+                            Matching M = Config.Data.Matches[currentMouseOverRow];
+                            Config.Data.Matches.RemoveAt(currentMouseOverRow);
+                            Config.Data.Matches.Insert(currentMouseOverRow + 1, M);
 
                             ConfigIntoDatagrid();
                         }
