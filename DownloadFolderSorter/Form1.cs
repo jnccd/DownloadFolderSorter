@@ -57,15 +57,27 @@ namespace DownloadFolderSorter
             {
                 lStatus.Text = "Status: Ready";
 
-                weightwatchers.Path = folder;
-                weightwatchers.Changed += ((object source, FileSystemEventArgs e) =>
+                FileSystemEventHandler onChanged = (object source, FileSystemEventArgs e) =>
                 {
                     try
                     {
                         SortDownloadFolder();
                     }
-                    catch { MessageBox.Show("Sorting Error: \n" + e.ToString()); }
-                });
+                    catch (Exception ex) { MessageBox.Show("Sorting Error: \n" + ex.ToString()); }
+                };
+                RenamedEventHandler onRenamed = (object source, RenamedEventArgs e) =>
+                {
+                    try
+                    {
+                        SortDownloadFolder();
+                    }
+                    catch (Exception ex) { MessageBox.Show("Sorting Error: \n" + ex.ToString()); }
+                };
+
+                weightwatchers.Path = folder;
+                weightwatchers.Changed += onChanged;
+                weightwatchers.Created += onChanged;
+                weightwatchers.Renamed += onRenamed;
                 weightwatchers.EnableRaisingEvents = true;
                 weightwatchers.IncludeSubdirectories = false;
 
