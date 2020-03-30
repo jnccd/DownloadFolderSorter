@@ -266,7 +266,7 @@ namespace DownloadFolderSorter
 
         private void DataGrid_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e != null && e.Button == MouseButtons.Right)
+            if (e != null && e.Button == MouseButtons.Right && e.ColumnIndex >= 0 && e.RowIndex >= 0)
             {
                 ContextMenu m = new ContextMenu();
                 m.MenuItems.Add(new MenuItem("↑", ((object s, EventArgs ev) =>
@@ -297,6 +297,21 @@ namespace DownloadFolderSorter
                             Matching M = Config.Data.Matches[currentMouseOverRow];
                             Config.Data.Matches.RemoveAt(currentMouseOverRow);
                             Config.Data.Matches.Insert(currentMouseOverRow + 1, M);
+
+                            ConfigIntoDatagrid();
+                        }
+                    }
+                    catch { }
+                })));
+                m.MenuItems.Add(new MenuItem("🗑️", ((object s, EventArgs ev) =>
+                {
+                    try
+                    {
+                        if (currentMouseOverRow < dataGrid.Rows.Count - 1)
+                        {
+                            DatagridIntoConfig();
+
+                            Config.Data.Matches.RemoveAt(currentMouseOverRow);
 
                             ConfigIntoDatagrid();
                         }
