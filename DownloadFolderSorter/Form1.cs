@@ -1,8 +1,10 @@
-﻿using System;
+﻿using ImageProcessor.Plugins.WebP.Imaging.Formats;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -215,7 +217,26 @@ namespace DownloadFolderSorter
             lock (FileMoveLock)
             {
                 if (File.Exists(fromTo[0]) && !File.Exists(fromTo[1]))
-                    File.Move(fromTo[0], fromTo[1]);
+                    if (fromTo[0].EndsWith(".jfif"))
+                    {
+                        var jfif = Image.FromFile(fromTo[0]);
+                        var targetPath = fromTo[1].Substring(0, fromTo[1].LastIndexOf('.')) + ".jpeg";
+                        jfif.Save(targetPath, ImageFormat.Jpeg);
+                        jfif.Dispose();
+                        File.Delete(fromTo[0]);
+                    }
+                    else if (fromTo[0].EndsWith(".webp"))
+                    {
+                        var stream = new FileStream(fromTo[0], FileMode.Open);
+                        var webp = new WebPFormat().Load(stream);
+                        var targetPath = fromTo[1].Substring(0, fromTo[1].LastIndexOf('.')) + ".jpeg";
+                        webp.Save(targetPath, ImageFormat.Jpeg);
+                        webp.Dispose();
+                        stream.Dispose();
+                        File.Delete(fromTo[0]);
+                    }
+                    else
+                        File.Move(fromTo[0], fromTo[1]);
             }
         }
 
