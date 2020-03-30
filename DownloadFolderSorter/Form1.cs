@@ -22,7 +22,8 @@ namespace DownloadFolderSorter
         bool phaseShift;
         int currentMouseOverRow;
         object FileMoveLock = new object();
-        
+        object PictureConversionLock = new object();
+
         // StartUp
         public MainForm()
         {
@@ -120,17 +121,19 @@ namespace DownloadFolderSorter
         {
             ConfigIntoDatagrid();
         }
-        private bool CanSort()
+        private string CanSort()
         {
-            if (!dfolderExists || !Directory.Exists(Config.Data.downloadFolder) ||
-                Config.Data.Matches == null || Config.Data.Matches.Count == 0)
-                return false;
+            if (!dfolderExists || !Directory.Exists(Config.Data.downloadFolder))
+                return "invalid Downlaod Folder";
+
+            if (Config.Data.Matches == null || Config.Data.Matches.Count == 0)
+                return "empty Matches";
 
             for (int i = 0; i < Config.Data.Matches.Count; i++)
                 if (!Directory.Exists(Config.Data.Matches[i].Target))
-                    return false;
+                    return $"{Config.Data.Matches[i].Name}'s target folder is invalid";
 
-            return true;
+            return null;
         }
         private void SortDownloadFolder()
         {
@@ -140,9 +143,10 @@ namespace DownloadFolderSorter
 
                 lock (lStatus)
                 {
-                    if (!CanSort())
+                    string errorMsg;
+                    if ((errorMsg = CanSort()) != null)
                     {
-                        lStatus.InvokeIfRequired(() => lStatus.Text = "Status: Error, current configuration is invalid");
+                        lStatus.InvokeIfRequired(() => lStatus.Text = "Status: Error, " + errorMsg);
                         return;
                     }
 
@@ -216,27 +220,41 @@ namespace DownloadFolderSorter
 
             lock (FileMoveLock)
             {
-                if (File.Exists(fromTo[0]) && !File.Exists(fromTo[1]))
-                    if (fromTo[0].EndsWith(".jfif"))
-                    {
-                        var jfif = Image.FromFile(fromTo[0]);
-                        var targetPath = fromTo[1].Substring(0, fromTo[1].LastIndexOf('.')) + ".jpeg";
-                        jfif.Save(targetPath, ImageFormat.Jpeg);
-                        jfif.Dispose();
-                        File.Delete(fromTo[0]);
-                    }
-                    else if (fromTo[0].EndsWith(".webp"))
-                    {
-                        var stream = new FileStream(fromTo[0], FileMode.Open);
-                        var webp = new WebPFormat().Load(stream);
-                        var targetPath = fromTo[1].Substring(0, fromTo[1].LastIndexOf('.')) + ".jpeg";
-                        webp.Save(targetPath, ImageFormat.Jpeg);
-                        webp.Dispose();
-                        stream.Dispose();
-                        File.Delete(fromTo[0]);
-                    }
-                    else
-                        File.Move(fromTo[0], fromTo[1]);
+                try
+                {
+                    if (File.Exists(fromTo[0]) && !File.Exists(fromTo[1]))
+                        if (fromTo[0].EndsWith(".jfif"))
+
+                        {
+                            var jfif = Image.FromFile(fromTo[0]);
+                            var targetPath = fromTo[1].Substring(0, fromTo[1].LastIndexOf('.')) + ".jpeg";
+                            jfif.Save(targetPath, ImageFormat.Jpeg);
+                            jfif.Dispose();
+                            File.Delete(fromTo[0]);
+                        }
+                        else if (fromTo[0].EndsWith(".webp"))
+                            lock (PictureConversionLock)
+                            {
+                                var stream = new FileStream(fromTo[0], FileMode.Open);
+                                try
+                                {
+                                    var webp = new WebPFormat().Load(stream);
+                                    var targetPath = fromTo[1].Substring(0, fromTo[1].LastIndexOf('.')) + ".jpeg";
+                                    webp.Save(targetPath, ImageFormat.Jpeg);
+                                    webp.Dispose();
+                                    stream.Dispose();
+                                    File.Delete(fromTo[0]);
+                                }
+                                catch 
+                                {
+                                    stream.Dispose(); 
+                                    File.Move(fromTo[0], fromTo[1]); 
+                                }
+                            }
+                        else
+                            File.Move(fromTo[0], fromTo[1]);
+                }
+                catch { }
             }
         }
 
