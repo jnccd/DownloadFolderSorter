@@ -164,6 +164,7 @@ namespace DownloadFolderSorter
 
                     bApply.InvokeIfRequired(() => bApply.Enabled = false);
                     lStatus.InvokeIfRequired(() => lStatus.Text = "Status: Sorting...");
+                    Thread.Sleep(3000);
                     List<Thread> sortThreads = new List<Thread>();
                     string[] files = Directory.GetFiles(Config.Data.downloadFolder);
                     for (int i = 0; i < files.Length; i++)
@@ -227,8 +228,6 @@ namespace DownloadFolderSorter
             string[] fromTo = o as string[];
             if (fromTo.Length != 2)
                 return;
-
-            Thread.Sleep(3000);
 
             lock (FileMoveLock)
             {
