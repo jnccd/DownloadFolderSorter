@@ -256,14 +256,16 @@ namespace DownloadFolderSorter
                                     stream.Dispose();
                                     File.Delete(fromTo[0]);
                                 }
-                                catch 
+                                catch
                                 {
-                                    stream.Dispose(); 
-                                    File.Move(fromTo[0], fromTo[1]); 
+                                    stream.Dispose();
+                                    File.Move(fromTo[0], fromTo[1]);
                                 }
                             }
                         else if (fromTo[0].EndsWith(".jpg_large"))
                             File.Move(fromTo[0], fromTo[1].Split('_').Reverse().Skip(1).Reverse().Combine("_"));
+                        else if (fromTo[0].EndsWith(".crdownload") || fromTo[0].EndsWith(".opdownload"))
+                            return;
                         else
                             File.Move(fromTo[0], fromTo[1]);
                 }
