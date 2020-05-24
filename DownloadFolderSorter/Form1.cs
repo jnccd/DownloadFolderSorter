@@ -23,6 +23,7 @@ namespace DownloadFolderSorter
         int currentMouseOverRow;
         object FileMoveLock = new object();
         object PictureConversionLock = new object();
+        int sortDelay = 3000;
 
         // StartUp
         public MainForm()
@@ -164,7 +165,7 @@ namespace DownloadFolderSorter
 
                     bApply.InvokeIfRequired(() => bApply.Enabled = false);
                     lStatus.InvokeIfRequired(() => lStatus.Text = "Status: Sorting...");
-                    Thread.Sleep(3000);
+                    Thread.Sleep(sortDelay);
                     List<Thread> sortThreads = new List<Thread>();
                     string[] files = Directory.GetFiles(Config.Data.downloadFolder);
                     for (int i = 0; i < files.Length; i++)
@@ -351,6 +352,12 @@ namespace DownloadFolderSorter
                 currentMouseOverRow = e.RowIndex;
                 m.Show(dataGrid, new Point(e.X + dataGrid.GetColumnDisplayRectangle(e.ColumnIndex, true).X, e.Y + dataGrid.GetRowDisplayRectangle(e.RowIndex, true).Y));
             }
+        }
+
+        private void delayPicker_Scroll(object sender, EventArgs e)
+        {
+            lDelay.Text = $"Delay: {delayPicker.Value} sec.";
+            sortDelay = delayPicker.Value * 1000;
         }
     }
 }
