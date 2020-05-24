@@ -40,7 +40,10 @@
             this.label1 = new System.Windows.Forms.Label();
             this.bBrowser = new System.Windows.Forms.Button();
             this.notifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
+            this.delayPicker = new System.Windows.Forms.TrackBar();
+            this.lDelay = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.dataGrid)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.delayPicker)).BeginInit();
             this.SuspendLayout();
             // 
             // dataGrid
@@ -140,11 +143,34 @@
             this.notifyIcon.Visible = true;
             this.notifyIcon.DoubleClick += new System.EventHandler(this.NotifyIcon_DoubleClick);
             // 
+            // delayPicker
+            // 
+            this.delayPicker.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.delayPicker.Location = new System.Drawing.Point(388, 242);
+            this.delayPicker.Maximum = 15;
+            this.delayPicker.Name = "delayPicker";
+            this.delayPicker.Size = new System.Drawing.Size(129, 45);
+            this.delayPicker.TabIndex = 7;
+            this.delayPicker.Value = 3;
+            this.delayPicker.Scroll += new System.EventHandler(this.delayPicker_Scroll);
+            // 
+            // lDelay
+            // 
+            this.lDelay.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.lDelay.AutoSize = true;
+            this.lDelay.Location = new System.Drawing.Point(313, 247);
+            this.lDelay.Name = "lDelay";
+            this.lDelay.Size = new System.Drawing.Size(69, 13);
+            this.lDelay.TabIndex = 8;
+            this.lDelay.Text = "Delay: 3 sec.";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(634, 277);
+            this.Controls.Add(this.lDelay);
+            this.Controls.Add(this.delayPicker);
             this.Controls.Add(this.bBrowser);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.tFolder);
@@ -158,6 +184,7 @@
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.Resize += new System.EventHandler(this.MainForm_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.dataGrid)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.delayPicker)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -175,6 +202,8 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn ToFolder;
         private System.Windows.Forms.Button bBrowser;
         private System.Windows.Forms.NotifyIcon notifyIcon;
+        private System.Windows.Forms.TrackBar delayPicker;
+        private System.Windows.Forms.Label lDelay;
     }
 }
 
