@@ -235,7 +235,6 @@ namespace DownloadFolderSorter
                 {
                     if (File.Exists(fromTo[0]) && !File.Exists(fromTo[1]))
                         if (fromTo[0].EndsWith(".jfif"))
-
                         {
                             var jfif = Image.FromFile(fromTo[0]);
                             var targetPath = fromTo[1].Substring(0, fromTo[1].LastIndexOf('.')) + ".jpeg";
@@ -262,6 +261,8 @@ namespace DownloadFolderSorter
                                     File.Move(fromTo[0], fromTo[1]); 
                                 }
                             }
+                        else if (fromTo[0].EndsWith(".jpg_large"))
+                            File.Move(fromTo[0], fromTo[1].Split('_').Reverse().Skip(1).Reverse().Combine("_"));
                         else
                             File.Move(fromTo[0], fromTo[1]);
                 }

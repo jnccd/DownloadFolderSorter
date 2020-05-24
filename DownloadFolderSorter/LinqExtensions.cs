@@ -57,6 +57,6 @@ namespace DownloadFolderSorter
         {
             string[] split = s.Split(seperator);
             return split.Take(split.Length - 1).Foldl("", (a, b) => a + seperator + b).Remove(0, 1);
-        }
+        } 
     }
 }
