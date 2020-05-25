@@ -152,7 +152,8 @@
             this.delayPicker.Size = new System.Drawing.Size(129, 45);
             this.delayPicker.TabIndex = 7;
             this.delayPicker.Value = 3;
-            this.delayPicker.Scroll += new System.EventHandler(this.delayPicker_Scroll);
+            this.delayPicker.Scroll += new System.EventHandler(this.DelayPicker_Scroll);
+            this.delayPicker.MouseUp += new System.Windows.Forms.MouseEventHandler(this.DelayPicker_MouseUp);
             // 
             // lDelay
             // 
@@ -181,6 +182,7 @@
             this.MinimumSize = new System.Drawing.Size(650, 250);
             this.Name = "MainForm";
             this.Text = "Download Folder Sorter";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.Resize += new System.EventHandler(this.MainForm_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.dataGrid)).EndInit();

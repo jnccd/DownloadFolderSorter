@@ -21,9 +21,8 @@ namespace DownloadFolderSorter
         bool dfolderExists;
         bool phaseShift;
         int currentMouseOverRow;
-        object FileMoveLock = new object();
-        object PictureConversionLock = new object();
-        int sortDelay = 3000;
+        readonly object FileMoveLock = new object();
+        readonly object PictureConversionLock = new object();
 
         // StartUp
         public MainForm()
@@ -36,6 +35,8 @@ namespace DownloadFolderSorter
             SetDownloadFolder(Config.Data.downloadFolder);
             LoadDataGrid();
             Task.Factory.StartNew(() => { this.InvokeIfRequired(() => { HideForm(); }); });
+            delayPicker.Value = Config.Data.sortDelay / 1000;
+            lDelay.Text = $"Delay: {delayPicker.Value} sec.";
         }
 
         // SetFolder
@@ -165,7 +166,7 @@ namespace DownloadFolderSorter
 
                     bApply.InvokeIfRequired(() => bApply.Enabled = false);
                     lStatus.InvokeIfRequired(() => lStatus.Text = "Status: Sorting...");
-                    Thread.Sleep(sortDelay);
+                    Thread.Sleep(Config.Data.sortDelay);
                     List<Thread> sortThreads = new List<Thread>();
                     string[] files = Directory.GetFiles(Config.Data.downloadFolder);
                     for (int i = 0; i < files.Length; i++)
@@ -297,6 +298,7 @@ namespace DownloadFolderSorter
             phaseShift = false;
         }
 
+        // Other Events
         private void DataGrid_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e != null && e.Button == MouseButtons.Right && e.ColumnIndex >= 0 && e.RowIndex >= 0)
@@ -355,11 +357,19 @@ namespace DownloadFolderSorter
                 m.Show(dataGrid, new Point(e.X + dataGrid.GetColumnDisplayRectangle(e.ColumnIndex, true).X, e.Y + dataGrid.GetRowDisplayRectangle(e.RowIndex, true).Y));
             }
         }
-
-        private void delayPicker_Scroll(object sender, EventArgs e)
+        private void DelayPicker_Scroll(object sender, EventArgs e)
         {
             lDelay.Text = $"Delay: {delayPicker.Value} sec.";
-            sortDelay = delayPicker.Value * 1000;
+            Config.Data.sortDelay = delayPicker.Value * 1000;
+        }
+        private void DelayPicker_MouseUp(object sender, MouseEventArgs e)
+        {
+            Config.Save();
+        }
+        private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            Config.Save();
+            Application.Exit();
         }
     }
 }

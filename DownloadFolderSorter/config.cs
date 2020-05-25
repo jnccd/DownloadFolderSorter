@@ -14,6 +14,7 @@ namespace DownloadFolderSorter
     {
         // TODO: Add your variables here
         public string downloadFolder = "";
+        public int sortDelay = 3000;
         public List<Matching> Matches = new List<Matching>();
 
         public ConfigData()
@@ -25,35 +26,64 @@ namespace DownloadFolderSorter
 
     public static class Config
     {
-        static readonly string configPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\config.json";
-        public static ConfigData Data = new ConfigData();
+        private static string configPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\config.json";
+        private static readonly object FileLock;
+        private static ConfigData data;
+        public static ConfigData Data
+        {
+            get
+            {
+                lock (FileLock)
+                {
+                    return data;
+                }
+            }
+        }
 
         static Config()
         {
-            if (Config.Exists())
-                Config.Load();
-            else
-                Config.Data = new ConfigData();
+            FileLock = new object();
+            Load();
         }
 
         public static string GetConfigPath()
         {
             return configPath;
         }
+        public static void SetConfigPath(string newPath)
+        {
+            lock (FileLock)
+            {
+                if (File.Exists(newPath))
+                {
+                    configPath = newPath;
+                    Load();
+                }
+            }
+        }
         public static bool Exists()
         {
-            return File.Exists(configPath);
+            lock (FileLock)
+            {
+                return File.Exists(configPath);
+            }
         }
         public static void Save()
         {
-            File.WriteAllText(configPath, JsonConvert.SerializeObject(Data));
+            lock (FileLock)
+            {
+                File.WriteAllText(configPath, JsonConvert.SerializeObject(Data));
+            }
         }
         public static void Load()
         {
-            if (Exists())
-                Data = JsonConvert.DeserializeObject<ConfigData>(File.ReadAllText(configPath));
-            else
-                Data = new ConfigData();
+            lock (FileLock)
+            {
+                if (Exists())
+                    data = JsonConvert.DeserializeObject<ConfigData>(File.ReadAllText(configPath));
+                else
+                    data = new ConfigData();
+            }
         }
         public static new string ToString()
         {
