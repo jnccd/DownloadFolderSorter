@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml;
 
 namespace DownloadFolderSorter
 {
@@ -206,6 +207,8 @@ namespace DownloadFolderSorter
                                         sortThreads.Add(t);
                                         t.Name = "SortThread" + sortThreads.Count;
                                         t.Start(new string[] { files[i], Config.Data.Matches[j].Target + "\\" + fileName });
+
+
                                     }
                                 }
                             }
@@ -272,6 +275,11 @@ namespace DownloadFolderSorter
                 }
                 catch { }
             }
+        }
+
+        private void ShowToast()
+        {
+            
         }
 
         // Show/Hide Icon
