@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -208,7 +209,16 @@ namespace DownloadFolderSorter
                                         t.Name = "SortThread" + sortThreads.Count;
                                         t.Start(new string[] { files[i], Config.Data.Matches[j].Target + "\\" + fileName });
 
-
+                                        // Display toast
+                                        try
+                                        {
+                                            new Process()
+                                            {
+                                                StartInfo = new ProcessStartInfo("toast.exe", $"-h \"Downloaded File\" -m \"{fileName}\" -f \"To {Config.Data.Matches[j].Target}\"")
+                                                { UseShellExecute = false, CreateNoWindow = true }
+                                            }.Start();
+                                        }
+                                        catch { }
                                     }
                                 }
                             }
@@ -275,11 +285,6 @@ namespace DownloadFolderSorter
                 }
                 catch { }
             }
-        }
-
-        private void ShowToast()
-        {
-            
         }
 
         // Show/Hide Icon
