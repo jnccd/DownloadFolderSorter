@@ -172,57 +172,51 @@ namespace DownloadFolderSorter
                     List<Thread> sortThreads = new List<Thread>();
                     string[] files = Directory.GetFiles(Config.Data.downloadFolder);
                     for (int i = 0; i < files.Length; i++)
-                        for (int j = 0; j < Config.Data.Matches.Count; j++)
-                        {
-                            if (!string.IsNullOrWhiteSpace(Config.Data.Matches[j].Match))
-                            {
-                                string[] splitOR = Config.Data.Matches[j].Match.Split('|');
-                                for (int k = 0; k < splitOR.Length; k++)
+                        if (!files[i].EndsWith("download"))
+                            for (int j = 0; j < Config.Data.Matches.Count; j++)
+                                if (!string.IsNullOrWhiteSpace(Config.Data.Matches[j].Match))
                                 {
-                                    if (Path.GetFileName(files[i]).ContainsAll(splitOR[k].Split('&')))
-                                    {
-                                        string fileName = Path.GetFileName(files[i]);
-                                        while (File.Exists(Config.Data.Matches[j].Target + "\\" + fileName))
+                                    string[] splitOR = Config.Data.Matches[j].Match.Split('|');
+                                    for (int k = 0; k < splitOR.Length; k++)
+                                        if (Path.GetFileName(files[i]).ContainsAll(splitOR[k].Split('&')))
                                         {
-                                            int index = fileName.LastIndexOf('(');
-                                            if (index != -1)
+                                            string fileName = Path.GetFileName(files[i]);
+                                            while (File.Exists(Config.Data.Matches[j].Target + "\\" + fileName))
                                             {
-                                                try
-                                                {
-                                                    string num = new string(fileName.Remove(0, index + 1).TakeWhile(x => char.IsDigit(x)).ToArray());
-                                                    int number = Convert.ToInt32(num);
-                                                    fileName = fileName.Substring(0, index + 1) + (number + 1) + fileName.Substring(index + 1 + num.Length);
-                                                }
-                                                catch
-                                                {
+                                                int index = fileName.LastIndexOf('(');
+                                                if (index != -1)
+                                                    try
+                                                    {
+                                                        string num = new string(fileName.Remove(0, index + 1).TakeWhile(x => char.IsDigit(x)).ToArray());
+                                                        int number = Convert.ToInt32(num);
+                                                        fileName = fileName.Substring(0, index + 1) + (number + 1) + fileName.Substring(index + 1 + num.Length);
+                                                    }
+                                                    catch
+                                                    {
+                                                        fileName = Path.GetFileNameWithoutExtension(fileName) + " (1)" + Path.GetExtension(fileName);
+                                                    }
+                                                else
                                                     fileName = Path.GetFileNameWithoutExtension(fileName) + " (1)" + Path.GetExtension(fileName);
-                                                }
                                             }
-                                            else
+
+                                            Thread t = new Thread(new ParameterizedThreadStart(ThreadedFileMove));
+                                            sortThreads.Add(t);
+                                            t.Name = "SortThread" + sortThreads.Count;
+                                            t.Start(new string[] { files[i], Config.Data.Matches[j].Target + "\\" + fileName });
+
+                                            // Display toast<
+                                            try
                                             {
-                                                fileName = Path.GetFileNameWithoutExtension(fileName) + " (1)" + Path.GetExtension(fileName);
+                                                new Process()
+                                                {
+                                                    StartInfo = new ProcessStartInfo("toast.exe", $"-h \"Downloaded File\" -m \"{fileName}\" " +
+                                                        $"-f \"To {Config.Data.Matches[j].Target}\" -n \"DownloadFolderSorter\"")
+                                                    { UseShellExecute = false, CreateNoWindow = true }
+                                                }.Start();
                                             }
+                                            catch { }
                                         }
-
-                                        Thread t = new Thread(new ParameterizedThreadStart(ThreadedFileMove));
-                                        sortThreads.Add(t);
-                                        t.Name = "SortThread" + sortThreads.Count;
-                                        t.Start(new string[] { files[i], Config.Data.Matches[j].Target + "\\" + fileName });
-
-                                        // Display toast
-                                        try
-                                        {
-                                            new Process()
-                                            {
-                                                StartInfo = new ProcessStartInfo("toast.exe", $"-h \"Downloaded File\" -m \"{fileName}\" -f \"To {Config.Data.Matches[j].Target}\"")
-                                                { UseShellExecute = false, CreateNoWindow = true }
-                                            }.Start();
-                                        }
-                                        catch { }
-                                    }
                                 }
-                            }
-                        }
 
                     while (sortThreads.Count > 0)
                     {
