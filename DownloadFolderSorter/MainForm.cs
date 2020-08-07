@@ -172,7 +172,7 @@ namespace DownloadFolderSorter
                     List<Thread> sortThreads = new List<Thread>();
                     string[] files = Directory.GetFiles(Config.Data.downloadFolder);
                     for (int i = 0; i < files.Length; i++)
-                        if (!files[i].EndsWith("download"))
+                        if (!files[i].EndsWith("download") && !files[i].EndsWith("part"))
                             for (int j = 0; j < Config.Data.Matches.Count; j++)
                                 if (!string.IsNullOrWhiteSpace(Config.Data.Matches[j].Match))
                                 {
@@ -203,18 +203,6 @@ namespace DownloadFolderSorter
                                             sortThreads.Add(t);
                                             t.Name = "SortThread" + sortThreads.Count;
                                             t.Start(new string[] { files[i], Config.Data.Matches[j].Target + "\\" + fileName });
-
-                                            // Display toast<
-                                            try
-                                            {
-                                                new Process()
-                                                {
-                                                    StartInfo = new ProcessStartInfo("toast.exe", $"-h \"Downloaded File\" -m \"{fileName}\" " +
-                                                        $"-f \"To {Config.Data.Matches[j].Target}\" -n \"DownloadFolderSorter\"")
-                                                    { UseShellExecute = false, CreateNoWindow = true }
-                                                }.Start();
-                                            }
-                                            catch { }
                                         }
                                 }
 
@@ -243,6 +231,7 @@ namespace DownloadFolderSorter
                 try
                 {
                     if (File.Exists(fromTo[0]) && !File.Exists(fromTo[1]))
+                    {
                         if (fromTo[0].EndsWith(".jfif"))
                         {
                             var jfif = Image.FromFile(fromTo[0]);
@@ -276,6 +265,15 @@ namespace DownloadFolderSorter
                             return;
                         else
                             File.Move(fromTo[0], fromTo[1]);
+
+                        // Display toast
+                        new Process()
+                        {
+                            StartInfo = new ProcessStartInfo("toast.exe", $"-h \"Downloaded File\" -m \"{Path.GetFileNameWithoutExtension(fromTo[1])}\" " +
+                                    $"-f \"To {fromTo[1]}\" -n \"DownloadFolderSorter\"")
+                            { UseShellExecute = false, CreateNoWindow = true }
+                        }.Start();
+                    }
                 }
                 catch { }
             }
