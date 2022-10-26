@@ -33,7 +33,6 @@ namespace DownloadFolderSorter
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
-            weightwatchers = new FileSystemWatcher();
             SetDownloadFolder(Config.Data.downloadFolder);
             LoadDataGrid();
             Task.Factory.StartNew(() => { this.InvokeIfRequired(() => { HideForm(); }); });
@@ -61,33 +60,50 @@ namespace DownloadFolderSorter
             {
                 lStatus.Text = "Status: Ready";
 
-                FileSystemEventHandler onChanged = (object source, FileSystemEventArgs e) =>
-                {
-                    try
-                    {
-                        SortDownloadFolder();
-                    }
-                    catch (Exception ex) { MessageBox.Show("Sorting Error: \n" + ex.ToString()); }
-                };
-                RenamedEventHandler onRenamed = (object source, RenamedEventArgs e) =>
-                {
-                    try
-                    {
-                        SortDownloadFolder();
-                    }
-                    catch (Exception ex) { MessageBox.Show("Sorting Error: \n" + ex.ToString()); }
-                };
-
-                weightwatchers.Path = folder;
-                weightwatchers.Changed += onChanged;
-                weightwatchers.Created += onChanged;
-                weightwatchers.Renamed += onRenamed;
-                weightwatchers.EnableRaisingEvents = true;
-                weightwatchers.IncludeSubdirectories = false;
+                SetFilewatcher(folder);
 
                 SortDownloadFolder();
             }
         }
+        private void SetFilewatcher(string folder)
+        {
+            if (weightwatchers != null)
+                weightwatchers.Dispose();
+            weightwatchers = new FileSystemWatcher();
+
+            FileSystemEventHandler onChanged = (object source, FileSystemEventArgs e) =>
+            {
+                try
+                {
+                    SortDownloadFolder();
+                }
+                catch (Exception ex) { MessageBox.Show("Sorting Error: \n" + ex.ToString()); }
+            };
+            RenamedEventHandler onRenamed = (object source, RenamedEventArgs e) =>
+            {
+                try
+                {
+                    SortDownloadFolder();
+                }
+                catch (Exception ex) { MessageBox.Show("Sorting Error: \n" + ex.ToString()); }
+            };
+
+            weightwatchers.Path = folder;
+            weightwatchers.Changed += onChanged;
+            weightwatchers.Created += onChanged;
+            weightwatchers.Renamed += onRenamed;
+            weightwatchers.Error += (object sender, ErrorEventArgs e) =>
+            {
+                Debug.WriteLine(e.ToString());
+            };
+            weightwatchers.Disposed += (object sender, EventArgs e) =>
+            {
+                Debug.WriteLine(e.ToString());
+            };
+            weightwatchers.EnableRaisingEvents = true;
+            weightwatchers.IncludeSubdirectories = false;
+        }
+
         private void BBrowser_Click(object sender, EventArgs e)
         {
             FolderBrowserDialog dialog = new FolderBrowserDialog
@@ -128,9 +144,9 @@ namespace DownloadFolderSorter
         private void BApply_Click(object sender, EventArgs e)
         {
             DatagridIntoConfig();
-
             Config.Save();
 
+            SetFilewatcher(Config.Data.downloadFolder);
             SortDownloadFolder();
         }
         private void LoadDataGrid()
